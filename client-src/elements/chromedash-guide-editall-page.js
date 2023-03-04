@@ -140,7 +140,7 @@ export class ChromedashGuideEditallPage extends LitElement {
     return FORMS_BY_STAGE_TYPE[stageType] || null;
   }
 
-  renderStageSection(formattedFeature, name, feStage, stageFields) {
+  renderStageSection(formattedFeature, name, helpText, feStage, stageFields) {
     if (!stageFields) return nothing;
 
     // Add a number differentiation if this stage type is the same as another stage.
@@ -173,8 +173,16 @@ export class ChromedashGuideEditallPage extends LitElement {
       `;
     });
 
+    const header = helpText ? html`
+    <sl-details class="stage_header">
+      <h3 slot="summary">${sectionName}</h3>
+      <sl-icon name="plus-square" slot="expand-icon"></sl-icon>
+      <sl-icon name="dash-square" slot="collapse-icon"></sl-icon>
+      ${helpText}
+    </sl-details>` : html`<h3>${sectionName}</h3>`;
+
     return html`
-    <h3>${sectionName}</h3>
+    ${header}
     <section class="flat_form">
       ${formFieldEls}
     </section>
@@ -196,7 +204,9 @@ export class ChromedashGuideEditallPage extends LitElement {
       FLAT_ENTERPRISE_METADATA_FIELDS :
       FLAT_METADATA_FIELDS);
     const formsToRender = [
-      this.renderStageSection(formattedFeature, FLAT_METADATA_FIELDS.name, {}, fieldsOnly)];
+      this.renderStageSection(formattedFeature,
+        FLAT_METADATA_FIELDS.name, FLAT_METADATA_FIELDS.help_text,
+        {}, fieldsOnly)];
 
     // Generate a single array with the name of every field that is displayed.
     let allFormFields = [...fieldsOnly];
@@ -210,7 +220,7 @@ export class ChromedashGuideEditallPage extends LitElement {
 
       fieldsOnly = flattenSections(stageForm);
       formsToRender.push(this.renderStageSection(
-        formattedFeature, stageForm.name, feStage, fieldsOnly));
+        formattedFeature, stageForm.name, stageForm.help_text, feStage, fieldsOnly));
       allFormFields = [...allFormFields, ...fieldsOnly];
 
       // If extension stages are associated with this stage,
@@ -220,7 +230,7 @@ export class ChromedashGuideEditallPage extends LitElement {
         fieldsOnly = flattenSections(FLAT_TRIAL_EXTENSION_FIELDS);
         formsToRender.push(this.renderStageSection(
           formattedFeature,
-          `${FLAT_TRIAL_EXTENSION_FIELDS.name}`,
+          `${FLAT_TRIAL_EXTENSION_FIELDS.name}`, 'This is help for extension fields',
           extensionStage,
           fieldsOnly));
         allFormFields = [...allFormFields, ...fieldsOnly];

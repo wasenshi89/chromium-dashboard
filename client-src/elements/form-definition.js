@@ -189,6 +189,9 @@ export const FLAT_METADATA_FIELDS = {
       isImplementationSection: true,
     },
   ],
+  help_text: html`
+    This is help for Feature metadata in FLAT_METADATA_FIELDS .
+  `,
 };
 
 // The fields that are available to every enterprise feature.
@@ -216,6 +219,9 @@ export const FLAT_ENTERPRISE_METADATA_FIELDS = {
       isImplementationSection: true,
     },
   ],
+  help_text: html`
+    This is help for Feature metadata in FLAT_ENTERPRISE_METADATA_FIELDS .
+  `,
 };
 
 // All fields relevant to the incubate/planning stage.
@@ -259,6 +265,9 @@ const FLAT_PROTOTYPE_FIELDS = {
       ],
     },
   ],
+  help_text: html`
+    This is help for FLAT_PROTOTYPE_FIELDS.
+  `,
 };
 
 // All fields relevant to the dev trials stage.
@@ -309,6 +318,9 @@ const FLAT_DEV_TRIAL_FIELDS = {
       implStatusValue: IMPLEMENTATION_STATUS.BEHIND_A_FLAG[0],
     },
   ],
+  help_text: html`
+    This is help for Dev trial and iterate on design in FLAT_DEV_TRIAL_FIELDS .
+  `,
 };
 // TODO(jrobbins): UA support signals section
 // TODO(jrobbins): api overview link
@@ -342,10 +354,16 @@ const FLAT_ORIGIN_TRIAL_FIELDS = {
         'ot_milestone_webview_end',
         'experiment_timeline', // deprecated
       ],
+      help_text: html`
+        This is help for Implementation in Chromium in FLAT_ORIGIN_TRIAL_FIELDS .
+      `,
       isImplementationSection: true,
       implStatusValue: IMPLEMENTATION_STATUS.ORIGIN_TRIAL[0],
     },
   ],
+  help_text: html`
+    This is help for Origin trial in FLAT_ORIGIN_TRIAL_FIELDS .
+  `,
 };
 
 export const FLAT_TRIAL_EXTENSION_FIELDS = {
@@ -398,6 +416,9 @@ const FLAT_PREPARE_TO_SHIP_FIELDS = {
         'intent_to_ship_url',
 
       ],
+      help_text: html`
+        This is help for Prepare to ship in FLAT_PREPARE_TO_SHIP_FIELDS .
+      `,
     },
     {
       name: 'Implementation in Chromium',

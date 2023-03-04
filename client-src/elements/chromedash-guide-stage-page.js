@@ -253,8 +253,17 @@ export class ChromedashGuideStagePage extends LitElement {
       if (section.isImplementationSection) {
         formSections.push(this.renderImplStatusFormSection(formattedFeature, section));
       } else {
+        const helpText = section.help_text;
+        const header = helpText ? html`
+        <sl-details class="stage_header">
+          <h3 slot="summary">${section.name}</h3>
+          <sl-icon name="plus-square" slot="expand-icon"></sl-icon>
+          <sl-icon name="dash-square" slot="collapse-icon"></sl-icon>
+          ${helpText}
+        </sl-details>` : html`<h3>${section.name}</h3>`;
+
         formSections.push(html`
-          <h3>${section.name}</h3>
+          ${header}
           <section class="stage_form">
             ${this.renderFields(formattedFeature, section)}
           </section>
@@ -290,8 +299,17 @@ export class ChromedashGuideStagePage extends LitElement {
 
     if (!implStatusName && !this.implStatusFormFields) return nothing;
 
+    const helpText = section.help_text;
+    const header = helpText ? html`
+    <sl-details class="stage_header">
+      <h3 slot="summary">${section.name}</h3>
+      <sl-icon name="plus-square" slot="expand-icon"></sl-icon>
+      <sl-icon name="dash-square" slot="collapse-icon"></sl-icon>
+      ${helpText}
+    </sl-details>` : html`<h3>${section.name}</h3>`;
+
     return html`
-      <h3>${section.name}</h3>
+      ${header}
       <section class="stage_form">
         ${implStatusName ? html`
           <tr>

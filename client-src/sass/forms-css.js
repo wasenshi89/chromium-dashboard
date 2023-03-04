@@ -94,6 +94,26 @@ export const FORM_STYLES = [
       margin-top: 4px;
     }
 
+    sl-details.stage_header {
+      margin: 2em 0 0;
+    }
+
+    sl-details.stage_header::part(header) {
+      background: transparent;
+      padding-left: 0;
+      padding-bottom: 0;
+    }
+
+    sl-details.stage_header::part(summary-icon) {
+      /* Disable the expand/collapse animation */
+      rotate: none;
+    }
+
+    sl-details.stage_header::part(content) {
+      padding-left: 2em;
+      padding-bottom: 1em;
+    }
+
     sl-input::part(base) {
       overflow: visible;
     }
