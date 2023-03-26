@@ -181,6 +181,11 @@ export const FORM_STYLES = [
       padding: 0.5em;
     }
 
+    chromedash-form-field .helptext code {
+      background-color:#EEEEEE;
+      font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New;
+    }
+
     chromedash-form-field .errorlist {
       color: red;
     }

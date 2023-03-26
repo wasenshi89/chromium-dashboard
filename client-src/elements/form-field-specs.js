@@ -90,23 +90,29 @@ export const ALL_FIELDS = {
     label: 'Feature name',
     help_text: html`
         <p>Capitalize only the first letter and the beginnings of proper nouns.</p>`,
-    extra_help: html`
-    <p>
-    Each feature should have a unique name that is written as a noun phrase.
-    </p>
-    <ul>
-      <li>Capitalize only the first letter and the beginnings of proper nouns.</li>
-      <li>Avoid using verbs such as "add", "enhance", "deprecate", or "delete". Instead, simply name the feature itself and use the feature type and stage fields to indicate the intent of change.</li>
-      <li>Do not include markup or markdown because they will not be rendered..</li>
-      <li>Write keywords and identifiers as they would appear to a web developer, not as they are in source code. For example, a method implemented as NewInterface#dostuff would be written as in JavaScript: NewInterface.doStuff().</li>
-    </ul>
+    extra_help: html`<p>
+      Give each feature a unique name that is a noun phrase.
+      </p>
+      <ul>
+        <li>Capitalize only the first letter and the beginnings of proper nouns.</li>
+        <li>Avoid using verbs such as "add", "enhance", "deprecate", or "delete".
+          Instead, simply name the feature itself and use the feature type and
+          stage fields to indicate the intent of change.</li>
+        <li>Do not include markup or markdown because they will not be rendered.</li>
+        <li>Use the same keywords and identifiers that web developers would use
+          in their code.  Also see suggestions
+          under <span style="font-size:large">&#8862;</span> for the
+          "<b>Summary</b>" field.
+        </li>
+      </ul>
 
-    <h4>Examples</h4>
-    <ul>
-      <li>Conversion Measurement API</li>
-      <li>CSS Flexbox: intrinsic size algorithm</li>
-      <li>Permissions-Policy header</li>
-    </ul>`,
+      <h4>Examples</h4>
+      <ul>
+        <li>Conversion Measurement API</li>
+        <li>CSS Flexbox: intrinsic size algorithm</li>
+        <li>Permissions-Policy header</li>
+      </ul>
+      `,
   },
 
   'summary': {
@@ -114,40 +120,66 @@ export const ALL_FIELDS = {
     required: true,
     label: 'Summary',
     help_text: html`
-       <p>Text in the beta release post, the enterprise release notes,
-        and other external sources will be based on this text.</p>
-        <p>Write from a web developer's point of view. Begin with one line
-        explaining what the feature does. Add one or two lines explaining
-        how this feature helps developers. Write in a matter-of-fact
-        manner and in the present tense. (This summary will be visible long after
-        your project is finished.) Avoid language such as "a new feature" and
-        "we propose".</p>
+      <p>This text will be used in the Chrome beta release post,
+       the enterprise release notes, and other external sources.</p>
+
+      <p>Write from a web developer's point of view. Begin with one line
+       explaining what the feature does. Add one or two lines explaining
+       how this feature helps developers. Write in a matter-of-fact
+       manner and in the present tense. (This summary will be visible long after
+       your project is finished.) Avoid language such as "a new feature" and
+       "we propose".</p>
       `,
     extra_help: html`
-    <p>
-    Provide a one sentence description followed by one or two lines explaining how this feature works and how it helps web developers.
-    </p>
+      <p>
+        Provide a one sentence description followed by one or two lines
+        explaining how this feature works and how it helps web developers.
+      </p>
 
-    <p>
-    Note: This text communicates with more than just the rest of Chromium development. It's the part most visible to external readers and is used in the beta release announcement, enterprise release notes, and other communications.
-    </p>
+      <p>
+        Note: This text communicates with more than just the rest of Chromium
+        development. It's the part most visible to external readers and is used in the
+        beta release announcement, enterprise release notes, and other communications.
+      </p>
 
-    <ul>
-      <li>Write from a web developer's point of view, not a browser developer's</li>
-      <li>Do not use markup or markdown because they will not be rendered.</li>
-      <li>Do not use hard or soft returns because they will not be rendered.</li>
-      <li>Avoid phrases such as "a new feature". Every feature on the site was new when it was created. You don't need to repeat that information.</li>
+      <ul>
+        <li> Use the same keywords and identifiers that web developers would use
+        in their code.
+          In particular, do not use static method/property syntax for instance
+          methods/properties. For example, for an instance method
+          <code>doStuff()</code> on
+          an <code>interface NewInterface</code>, write
+          "<code>NewInterface's doStuff() method</code>"
+          (not "<code>NewInterface.doStuff() method</code>").
+          For a method on a well-known global like Document,
+          write "<code>document.doStuff()</code>"
+          (not "<code>Document.doStuff()</code>").
+          </li>
+        <li>Do not use markup or markdown because they will not be rendered.</li>
+        <li>Do not use hard or soft returns because they will not be rendered.</li>
+        <li>Avoid phrases such as "a new feature".
+          Every feature on the site was new when it was created.
+          You don't need to repeat that information.</li>
 
-      <li>The first line should be a sentence fragment beginning with a verb. (See below.) This is the rare exception to the requirement to always use complete sentences.</li>
+        <li>The first line should be a sentence fragment beginning with a verb.
+          (See example below.) This is the rare exception to the requirement to always use
+          complete sentences.</li>
 
-      <li>"Conformance with spec" is not adequate. Most if not all features are in conformance to spec.</li>
-    </ul>
+        <li>"Conformance with spec" is not adequate. Most if not all features are in
+          conformance to spec.</li>
+      </ul>
 
-    <h4>Example</h4>
-    <blockquote>
-    Splits the HTTP cache using the top frame origin (and possibly subframe origin) to prevent documents from one origin from knowing whether a resource from another origin was cached. The HTTP cache is currently one per profile, with a single namespace for all resources and subresources regardless of origin or renderer process. Splitting the cache on top frame origins helps the browser deflect side-channel attacks where one site can detect resources in another site's cache.
-    </blockquote>
-    `,
+      <h4>Example</h4>
+      <blockquote>
+        Splits the HTTP cache using the top frame origin (and possibly subframe
+        origin) to prevent documents from one origin from knowing whether a resource
+        from another origin was cached. The HTTP cache is currently one per profile,
+        with a single namespace for all resources and subresources regardless of
+        origin or renderer process. Splitting the cache on top frame origins helps the
+        browser deflect side-channel attacks where one site can detect resources in
+        another site's cache.
+      </blockquote>
+      `,
   },
 
   'owner': {
