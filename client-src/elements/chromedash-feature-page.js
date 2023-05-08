@@ -6,6 +6,7 @@ import {autolink, renderHTMLIf, showToastMessage,
   renderAbsoluteDate, renderRelativeDate,
 } from './utils.js';
 import {SHARED_STYLES} from '../sass/shared-css.js';
+import {DETAILS_STYLES} from './chromedash-feature-detail';
 
 const INACTIVE_STATES = [
   'No longer pursuing',
@@ -17,6 +18,7 @@ export class ChromedashFeaturePage extends LitElement {
   static get styles() {
     return [
       ...SHARED_STYLES,
+      ...DETAILS_STYLES,
       css`
         #feature {
           background: var(--card-background);
@@ -44,12 +46,6 @@ export class ChromedashFeaturePage extends LitElement {
           margin-right: 5px;
         }
 
-        #updated {
-          color: var(--unimportant-text-color);
-          border-top: var(--default-border);
-          padding: var(--content-padding-quarter) 0 0 var(--content-padding);
-        }
-
         li {
           list-style: none;
         }
@@ -59,6 +55,10 @@ export class ChromedashFeaturePage extends LitElement {
         }
         #consensus li label {
           width: 125px;
+        }
+
+        #history p {
+          margin-top: var(--content-padding-half);
         }
 
         sl-skeleton {
@@ -319,6 +319,16 @@ export class ChromedashFeaturePage extends LitElement {
     `;
   }
 
+  renderEnterpriseFeatureContent() {
+    return html`
+      ${this.feature.summary ? html`
+        <section id="summary">
+          <p class="preformatted">${autolink(this.feature.summary)}</p>
+        </section>
+      `: nothing}
+    `;
+  }
+
   renderFeatureContent() {
     return html`
       ${this.feature.unlisted ? html`
@@ -485,12 +495,20 @@ export class ChromedashFeaturePage extends LitElement {
     `;
   }
 
-  renderUpdated() {
+  renderHistory() {
     return html`
-      <section id="updated">
-          Last updated on
+      <section id="history">
+          <h3>History</h3>
+          <p>Entry created on
+          ${renderAbsoluteDate(this.feature.created?.when, true)}
+          ${renderRelativeDate(this.feature.created?.when)}</p>
+          <p>Last updated on
           ${renderAbsoluteDate(this.feature.updated?.when, true)}
-          ${renderRelativeDate(this.feature.updated?.when)}
+          ${renderRelativeDate(this.feature.updated?.when)}</p>
+
+          <p><a href="/feature/${this.feature.id}/activity">
+            All comments &amp; activity
+          </a></p>
       </section>
     `;
   }
@@ -528,13 +546,19 @@ export class ChromedashFeaturePage extends LitElement {
     // At this point, the feature has loaded successfully, render the components.
     return html`
       ${this.renderSubHeader()}
-      <div id="feature">
-        ${this.renderFeatureContent()}
-        ${this.feature.is_enterprise_feature ?
-            this.renderEnterpriseFeatureStatus() :
-            this.renderFeatureStatus()}
-        ${this.renderUpdated()}
-      </div>
+      <sl-details summary="Overview"
+        ?open=${true}
+      >
+        <section class="card">
+          ${this.feature.is_enterprise_feature ?
+            this.renderEnterpriseFeatureContent() :
+            this.renderFeatureContent()}
+          ${this.feature.is_enterprise_feature ?
+              this.renderEnterpriseFeatureStatus() :
+              this.renderFeatureStatus()}
+          ${this.renderHistory()}
+        </section>
+      </sl-details>
       ${this.renderFeatureDetails()}
     `;
   }

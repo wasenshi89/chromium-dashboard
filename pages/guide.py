@@ -57,9 +57,6 @@ class FeatureCreateHandler(basehandlers.FlaskHandler):
     # TODO(jrobbins): Validate input, even though it is done on client.
 
     feature_type = int(self.form.get('feature_type', 0))
-    signed_in_user = ndb.User(
-        email=self.get_current_user().email(),
-        _auth_domain='gmail.com')
 
     # Write for new FeatureEntry entity.
     feature_entry = FeatureEntry(
@@ -71,8 +68,8 @@ class FeatureCreateHandler(basehandlers.FlaskHandler):
         editor_emails=editors,
         cc_emails=cc_emails,
         devrel_emails=[DEVREL_EMAIL],
-        creator_email=signed_in_user.email(),
-        updater_email=signed_in_user.email(),
+        creator_email=self.get_current_user().email(),
+        updater_email=self.get_current_user().email(),
         accurate_as_of=datetime.now(),
         unlisted=self.form.get('unlisted') == 'on',
         breaking_change=self.form.get('breaking_change') == 'on',
@@ -87,9 +84,7 @@ class FeatureCreateHandler(basehandlers.FlaskHandler):
     # Remove all feature-related cache.
     rediscache.delete_keys_with_prefix(FeatureEntry.feature_cache_prefix())
 
-    # TODO(jrobbins): Make this be /feature/ID after ability to edit
-    # from the feature detail page is complete.
-    redirect_url = '/guide/edit/' + str(key.integer_id())
+    redirect_url = '/feature/' + str(key.integer_id())
     return self.redirect(redirect_url)
 
   def write_gates_and_stages_for_feature(
@@ -139,8 +134,6 @@ class EnterpriseFeatureCreateHandler(FeatureCreateHandler):
         summary=self.form.get('summary'),
         owner_emails=owners,
         editor_emails=editors,
-        launch_bug_url=self.form.get('launch_bug_url'),
-        breaking_change=self.form.get('breaking_change') == 'on',
         creator_email=signed_in_user.email(),
         updater_email=signed_in_user.email(),
         accurate_as_of=datetime.now(),
@@ -155,8 +148,6 @@ class EnterpriseFeatureCreateHandler(FeatureCreateHandler):
     # Remove all feature-related cache.
     rediscache.delete_keys_with_prefix(FeatureEntry.feature_cache_prefix())
 
-    # TODO(jrobbins): Make this be /feature/ID after ability to edit
-    # from the feature detail page is complete.
     redirect_url = '/guide/editall/' + str(key.integer_id()) + '#rollout1'
     return self.redirect(redirect_url)
 
