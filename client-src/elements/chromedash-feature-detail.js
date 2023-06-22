@@ -1,5 +1,6 @@
 import {LitElement, css, html, nothing} from 'lit';
-import {getStageValue} from './utils';
+import {getStageValue, renderHTMLIf} from './utils';
+import {enhanceUrl} from './feature-link';
 import {openAddStageDialog} from './chromedash-add-stage-dialog';
 import {makeDisplaySpecs} from './form-field-specs';
 import {
@@ -26,7 +27,7 @@ import './chromedash-activity-log';
 import './chromedash-callout';
 import './chromedash-gate-chip';
 import {autolink, findProcessStage, flattenSections} from './utils.js';
-import {SHARED_STYLES} from '../sass/shared-css.js';
+import {SHARED_STYLES} from '../css/shared-css.js';
 
 export const DETAILS_STYLES = [css`
       sl-details {
@@ -56,6 +57,7 @@ const LONG_TEXT = 60;
 class ChromedashFeatureDetail extends LitElement {
   static get properties() {
     return {
+      featureLinks: {type: Array},
       user: {type: Object},
       canEdit: {type: Boolean},
       feature: {type: Object},
@@ -172,7 +174,6 @@ class ChromedashFeatureDetail extends LitElement {
         border: var(--spot-card-border);
         box-shadow: var(--spot-card-box-shadow);
       }
-
     `];
   }
 
@@ -313,7 +314,7 @@ class ChromedashFeatureDetail extends LitElement {
     let value = this.feature[fieldName];
     const fieldNameMapping = {
       owner: 'browsers.chrome.owners',
-      editors: 'browsers.chrome.editors',
+      editors: 'editors',
       search_tags: 'tags',
       spec_link: 'standards.spec',
       standard_maturity: 'standards.maturity.text',
@@ -361,7 +362,7 @@ class ChromedashFeatureDetail extends LitElement {
 
   renderText(value) {
     value = String(value);
-    const markup = autolink(value);
+    const markup = autolink(value, this.featureLinks);
     if (value.length > LONG_TEXT || value.includes('\n')) {
       return html`<span class="longtext">${markup}</span>`;
     }
@@ -370,11 +371,11 @@ class ChromedashFeatureDetail extends LitElement {
 
   renderUrl(value) {
     if (value.startsWith('http')) {
-      return html`
-        <a href=${value} target="_blank"
-           class="url ${value.length > LONG_TEXT ? 'longurl' : ''}"
-           >${value}</a>
-      `;
+      return enhanceUrl(value, this.featureLinks, html`
+      <a href=${value} target="_blank"
+       class="url ${value.length > LONG_TEXT ? 'longurl' : ''}"
+       >${value}</a>
+    `);
     }
     return this.renderText(value);
   }
@@ -619,11 +620,12 @@ class ChromedashFeatureDetail extends LitElement {
     if (!this.canEdit) {
       return nothing;
     }
+    const text = this.feature.is_enterprise_feature ? 'Add Step': 'Add Stage';
 
     return html`
     <sl-button size="small" @click="${
         () => openAddStageDialog(this.feature.id, this.feature.feature_type_int)}">
-      Add stage
+      ${text}
     </sl-button>`;
   }
 
@@ -631,7 +633,8 @@ class ChromedashFeatureDetail extends LitElement {
     return html`
       ${this.renderMetadataSection()}
       <h2>
-        <span>Development stages</span>
+        ${renderHTMLIf(!this.feature.is_enterprise_feature, html`<span>Development stages</span>`)}
+        ${renderHTMLIf(this.feature.is_enterprise_feature, html`<span>Rollout steps</span>`)}
         ${this.renderControls()}
       </h2>
       ${this.feature.stages.map(feStage => this.renderProcessStage(feStage))}

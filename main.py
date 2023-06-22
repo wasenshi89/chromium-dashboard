@@ -24,6 +24,7 @@ from api import channels_api
 from api import comments_api
 from api import cues_api
 from api import features_api
+from api import feature_links_api
 from api import login_api
 from api import logout_api
 from api import metricsdata
@@ -99,6 +100,7 @@ api_routes: list[Route] = [
     Route(f'{API_BASE}/features', features_api.FeaturesAPI),
     Route(f'{API_BASE}/features/<int:feature_id>', features_api.FeaturesAPI),
     Route(f'{API_BASE}/features/create', features_api.FeaturesAPI),
+    Route(f'{API_BASE}/feature_links', feature_links_api.FeatureLinksAPI),
     Route(f'{API_BASE}/features/<int:feature_id>/votes',
         reviews_api.VotesAPI),
     Route(f'{API_BASE}/features/<int:feature_id>/votes/<int:gate_id>',
@@ -156,7 +158,7 @@ spa_page_routes = [
   Route('/guide/new', guide.FeatureCreateHandler,
       defaults={'require_create_feature': True}),
   Route('/guide/enterprise/new', guide.EnterpriseFeatureCreateHandler,
-      defaults={'require_create_feature': True}),
+      defaults={'require_signin': True, 'require_create_feature': True, 'is_enterprise_page': True}),
   Route('/guide/edit/<int:feature_id>', guide.FeatureEditHandler,
       defaults={'require_edit_feature': True}),
   Route('/guide/stage/<int:feature_id>/<int:intent_stage>/<int:stage_id>',
@@ -186,9 +188,12 @@ spa_page_routes = [
   Route('/metrics/feature/timeline/popularity/<int:bucket_id>'),
   Route('/settings', defaults={'require_signin': True}),
   Route('/enterprise'),
-  Route('/enterprise/releasenotes'),
+  Route(
+    '/enterprise/releasenotes',
+    defaults={'require_signin': True, 'is_enterprise_page': True}),
   # Admin pages
   Route('/admin/blink', defaults={'require_admin_site': True, 'require_signin': True}),
+  Route('/admin/slo_report', reminders.SLOReportHandler),
 ]
 
 mpa_page_routes: list[Route] = [
@@ -236,9 +241,15 @@ internals_routes: list[Route] = [
 
   # Maintenance scripts.
   Route('/scripts/evaluate_gate_status',
-      maintenance_scripts.EvaluateGateStatus),
+        maintenance_scripts.EvaluateGateStatus),
   Route('/scripts/write_missing_gates',
-      maintenance_scripts.WriteMissingGates),
+        maintenance_scripts.WriteMissingGates),
+  Route('/scripts/migrate_gecko_views',
+        maintenance_scripts.MigrateGeckoViews),
+  Route('/scripts/backfill_responded_on',
+        maintenance_scripts.BackfillRespondedOn),
+  Route('/scripts/backfill_stage_created',
+        maintenance_scripts.BackfillStageCreated),
 ]
 
 dev_routes: list[Route] = []

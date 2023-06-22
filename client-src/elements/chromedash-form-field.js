@@ -11,10 +11,12 @@ export class ChromedashFormField extends LitElement {
       name: {type: String},
       stageId: {type: Number},
       value: {type: String},
+      index: {type: Number}, // Represents which field this is on the form.
       disabled: {type: Boolean},
       loading: {type: Boolean},
       fieldProps: {type: Object},
       forEnterprise: {type: Boolean},
+      stageType: {type: Number | undefined},
       componentChoices: {type: Object}, // just for the blink component select field
     };
   }
@@ -24,9 +26,11 @@ export class ChromedashFormField extends LitElement {
     this.name = '';
     this.stageId = 0;
     this.value = '';
+    this.index = -1;
     this.disabled = false;
     this.loading = false;
     this.forEnterprise = false;
+    this.stageType = undefined;
     this.componentChoices = {};
   }
 
@@ -67,6 +71,28 @@ export class ChromedashFormField extends LitElement {
     return this;
   }
 
+  // Event handler whenever the input field is changed by the user.
+  handleFieldUpdated(e) {
+    // Determine the value based on the input type.
+    const type = this.fieldProps.type;
+    let fieldValue;
+    if (type === 'checkbox') {
+      fieldValue = e.target.checked;
+    } else {
+      fieldValue = e.target.value;
+    }
+
+    const eventOptions = {
+      detail: {
+        value: fieldValue,
+        index: this.index,
+      },
+    };
+
+    // Dispatch a new event to notify other components of the changes.
+    this.dispatchEvent(new CustomEvent('form-field-update', eventOptions));
+  }
+
   renderWidgets() {
     const type = this.fieldProps.type;
     const fieldDisabled = this.fieldProps.disabled;
@@ -78,7 +104,7 @@ export class ChromedashFormField extends LitElement {
     // form field name can be specified in form-field-spec to match DB field name
     let fieldName = this.fieldProps.name || this.name;
     if (STAGE_SPECIFIC_FIELDS.has(fieldName) && this.stageId) {
-      fieldName = `${fieldName}__${this.stageId}`;
+      fieldName = this.stageType ? `${fieldName}__${this.stageId}__${this.stageType}__create` : `${fieldName}__${this.stageId}`;
     }
     // choices can be specified in form-field-spec or fetched from API
     const choices = this.fieldProps.choices || this.componentChoices;
@@ -93,7 +119,8 @@ export class ChromedashFormField extends LitElement {
           id="id_${this.name}"
           size="small"
           ?checked=${fieldValue === 'true' || fieldValue === 'True'}
-          ?disabled=${this.disabled || fieldDisabled}>
+          ?disabled=${this.disabled || fieldDisabled}
+          @sl-change="${this.handleFieldUpdated}">
           ${this.fieldProps.label}
         </sl-checkbox>
       `;
@@ -105,7 +132,8 @@ export class ChromedashFormField extends LitElement {
           value="${fieldValue}"
           size="small"
           hoist
-          ?disabled=${fieldDisabled || this.disabled || this.loading}>
+          ?disabled=${fieldDisabled || this.disabled || this.loading}
+          @sl-change="${this.handleFieldUpdated}">
           ${Object.values(choices).map(
             ([value, label]) => html`
               <sl-option value="${value}"> ${label} </sl-option>
@@ -125,7 +153,8 @@ export class ChromedashFormField extends LitElement {
           hoist
           multiple
           cleareable
-          ?disabled=${fieldDisabled || this.disabled || this.loading}>
+          ?disabled=${fieldDisabled || this.disabled || this.loading}
+          @sl-change="${this.handleFieldUpdated}">
           ${Object.values(choices).map(
             ([value, label]) => html`
               <sl-option value="${value}"> ${label} </sl-option>
@@ -142,7 +171,8 @@ export class ChromedashFormField extends LitElement {
           size="small"
           autocomplete="off"
           .value=${fieldValue}
-          ?required=${this.fieldProps.required}>
+          ?required=${this.fieldProps.required}
+          @sl-change="${this.handleFieldUpdated}">
         </sl-input>
       `;
     } else if (type === 'textarea') {
@@ -153,7 +183,8 @@ export class ChromedashFormField extends LitElement {
           id="id_${this.name}"
           size="small"
           .value=${fieldValue}
-          ?required=${this.fieldProps.required}>
+          ?required=${this.fieldProps.required}
+          @sl-change="${this.handleFieldUpdated}">
         </chromedash-textarea>
       `;
     } else if (type === 'radios') {
@@ -161,7 +192,8 @@ export class ChromedashFormField extends LitElement {
         ${Object.values(choices).map(
           ([value, label, description]) => html`
             <input id="id_${this.name}_${value}" name="${fieldName}"
-              value="${value}" type="radio" required>
+              value="${value}" type="radio" required
+              @change=${this.handleFieldUpdated}>
             <label for="id_${this.name}_${value}">${label}</label>
             <p>${description}</p>
           `)}
@@ -177,7 +209,8 @@ export class ChromedashFormField extends LitElement {
             class="datalist-input"
             type="search"
             list="${this.name}_list"
-            ?required=${this.fieldProps.required} />
+            ?required=${this.fieldProps.required}
+            @change=${this.handleFieldUpdated}/>
         </div>
         <datalist id="${this.name}_list">
           ${Object.values(choices).map(

@@ -5,7 +5,8 @@ import {
   showToastMessage,
   flattenSections,
   setupScrollToHash,
-  shouldShowDisplayNameField} from './utils.js';
+  shouldShowDisplayNameField,
+  renderHTMLIf} from './utils.js';
 import './chromedash-form-table';
 import './chromedash-form-field';
 import {
@@ -15,9 +16,9 @@ import {
   FORMS_BY_STAGE_TYPE,
   FLAT_TRIAL_EXTENSION_FIELDS,
 } from './form-definition';
-import {SHARED_STYLES} from '../sass/shared-css.js';
-import {FORM_STYLES} from '../sass/forms-css.js';
-import {STAGE_SHORT_NAMES, STAGE_SPECIFIC_FIELDS} from './form-field-enums.js';
+import {SHARED_STYLES} from '../css/shared-css.js';
+import {FORM_STYLES} from '../css/forms-css.js';
+import {STAGE_SHORT_NAMES, STAGE_SPECIFIC_FIELDS, STAGE_ENT_ROLLOUT} from './form-field-enums.js';
 import {openAddStageDialog} from './chromedash-add-stage-dialog';
 
 
@@ -27,6 +28,11 @@ export class ChromedashGuideEditallPage extends LitElement {
       ...SHARED_STYLES,
       ...FORM_STYLES,
       css`
+      .enterprise-help-text > *, .enterprise-help-text li {
+        margin: revert;
+        padding: revert;
+        list-style: revert;
+      }
     `];
   }
 
@@ -37,6 +43,7 @@ export class ChromedashGuideEditallPage extends LitElement {
       loading: {type: Boolean},
       appTitle: {type: String},
       nextPage: {type: String},
+      nextStageToCreateId: {type: Number},
     };
   }
 
@@ -49,6 +56,7 @@ export class ChromedashGuideEditallPage extends LitElement {
     this.nextPage = '';
     this.previousStageTypeRendered = 0;
     this.sameTypeRendered = 0;
+    this.nextStageToCreateId = 0;
   }
 
   connectedCallback() {
@@ -151,6 +159,32 @@ export class ChromedashGuideEditallPage extends LitElement {
     return FORMS_BY_STAGE_TYPE[stageType] || null;
   }
 
+  getHelpTextForStage(stageType) {
+    switch (stageType) {
+      case STAGE_ENT_ROLLOUT:
+        return html`
+        <section class="enterprise-help-text">
+          <h3>Rollout steps</h3>
+          <p>The enterprise release notes focus on changes to the stable channel.
+          Please add a stage for each milestone where something is changing on the stable channel.
+          For finch rollouts, use the milestone where the rollout starts.
+          </p>
+          <p>
+            For example, you may only have a single stage where you roll out to 100% of users on milestone N.
+          </p>
+          <p>A more complex example might look like this:</p>
+          <ul>
+            <li>On milestone N-1, you introduce a flag for early testing of an upcoming change, or start a deprecation origin trial</li>
+            <li>On milestone N, you start a finch rollout of a feature at 1% and introduce an enterprise policy for it</li>
+            <li>On milestone N+3, you remove the enterprise policy</li>
+          </ul>
+        </section>
+      `;
+      default:
+        return nothing;
+    }
+  }
+
   renderStageSection(formattedFeature, sectionBaseName, feStage, stageFields) {
     if (!stageFields) return nothing;
 
@@ -186,6 +220,7 @@ export class ChromedashGuideEditallPage extends LitElement {
         <chromedash-form-field
           name=${field}
           stageId=${feStage.id}
+          stageType=${feStage.to_create ? feStage.stage_type : undefined}
           value=${value}
           ?forEnterprise=${formattedFeature.is_enterprise_feature}>
         </chromedash-form-field>
@@ -193,8 +228,10 @@ export class ChromedashGuideEditallPage extends LitElement {
     });
     const id = `${STAGE_SHORT_NAMES[feStage.stage_type] || 'metadata'}${this.sameTypeRendered}`
       .toLowerCase();
+    const isEnterpriseFeatureRollout = formattedFeature.is_enterprise_feature &&
+      feStage.stage_type === STAGE_ENT_ROLLOUT;
     return html`
-    <h3 id="${id}">${sectionName}</h3>
+    ${renderHTMLIf(!isEnterpriseFeatureRollout, html`<h3 id="${id}">${sectionName}</h3>`)}
     <section class="flat_form">
       ${formFieldEls}
     </section>
@@ -222,10 +259,17 @@ export class ChromedashGuideEditallPage extends LitElement {
     let allFormFields = [...fieldsOnly];
 
 
+    let previousStageType = null;
     for (const feStage of feStages) {
       const stageForm = this.getStageForm(feStage.stage_type);
       if (!stageForm) {
         continue;
+      }
+
+      if (formattedFeature.is_enterprise_feature &&
+          feStage.stage_type !== previousStageType) {
+        formsToRender.push(this.getHelpTextForStage(feStage.stage_type));
+        previousStageType = feStage.stage_type;
       }
 
       fieldsOnly = flattenSections(stageForm);
@@ -257,6 +301,7 @@ export class ChromedashGuideEditallPage extends LitElement {
   getAllStageIds() {
     const stageIds = [];
     this.feature.stages.forEach(feStage => {
+      if (feStage.to_create) return;
       stageIds.push(feStage.id);
       // Check if any trial extension exist, and collect their IDs as well.
       const extensions = feStage.extensions || [];
@@ -266,11 +311,29 @@ export class ChromedashGuideEditallPage extends LitElement {
   }
 
   renderAddStageButton() {
+    const text = this.feature.is_enterprise_feature ? 'Add Step': 'Add Stage';
     return html`
     <sl-button size="small" @click="${
-        () => openAddStageDialog(this.feature.id, this.feature.feature_type_int)}">
-      Add stage
+        () => openAddStageDialog(this.feature.id, this.feature.feature_type_int, this.AddNewStageToCreate.bind(this))}">
+      ${text}
     </sl-button>`;
+  }
+
+  AddNewStageToCreate(newStage) {
+    const lastIndexOfType = this.feature.stages
+      .findLastIndex((stage) => stage.stage_type === newStage.stage_type);
+    if (lastIndexOfType === -1) {
+      this.feature.stages.push({
+        ...newStage,
+        to_create: true,
+        id: ++this.nextStageToCreateId});
+    } else {
+      this.feature.stages.splice(lastIndexOfType + 1, 0, {
+        ...newStage,
+        to_create: true,
+        id: ++this.nextStageToCreateId});
+    }
+    this.feature = {...this.feature};
   }
 
   renderForm() {

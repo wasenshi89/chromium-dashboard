@@ -22,6 +22,7 @@ import requests
 
 from framework import permissions
 from internals import core_enums
+from internals import slo
 from internals.review_models import Gate, OwnersFile, Vote
 import settings
 
@@ -40,7 +41,9 @@ SECURITY_APPROVERS: list[str] = [
   # TBD
 ]
 ENTERPRISE_APPROVERS = [
-    'cbe-launch-approvers@google.com',
+    'mhoste@google.com',
+    'angelaweber@google.com',
+    'davidayad@google.com',
     'bheenan@google.com',
 ]
 DEBUGGABILITY_APPROVERS = [
@@ -54,6 +57,9 @@ TESTING_APPROVERS = [
     'vivianz@google.com',
 ]
 
+DEFAULT_SLO_LIMIT = 2  # Two weekdays in the Pacific timezone.
+LONGER_SLO_LIMIT = 7  # Seven weekdays in the Pacific timezone.
+
 @dataclass(eq=True, frozen=True)
 class ApprovalFieldDef:
   name: str
@@ -62,6 +68,8 @@ class ApprovalFieldDef:
   rule: str
   approvers: str | list[str]
   team_name: str
+  slo_initial_response: int = DEFAULT_SLO_LIMIT
+
 
 # Note: This can be requested manually through the UI, but it is not
 # triggered by a blink-dev thread because i2p intents are only FYIs to
@@ -70,25 +78,29 @@ PrototypeApproval = ApprovalFieldDef(
     'Intent to Prototype',
     'Not normally used.  If a review is requested, API Owners can approve.',
     core_enums.GATE_API_PROTOTYPE, ONE_LGTM,
-    approvers=API_OWNERS_URL, team_name='API Owners')
+    approvers=API_OWNERS_URL, team_name='API Owners',
+    slo_initial_response=LONGER_SLO_LIMIT)
 
 ExperimentApproval = ApprovalFieldDef(
     'Intent to Experiment',
     'One API Owner must approve your intent',
     core_enums.GATE_API_ORIGIN_TRIAL, ONE_LGTM,
-    approvers=API_OWNERS_URL, team_name='API Owners')
+    approvers=API_OWNERS_URL, team_name='API Owners',
+    slo_initial_response=LONGER_SLO_LIMIT)
 
 ExtendExperimentApproval = ApprovalFieldDef(
     'Intent to Extend Experiment',
     'One API Owner must approve your intent',
     core_enums.GATE_API_EXTEND_ORIGIN_TRIAL, ONE_LGTM,
-    approvers=API_OWNERS_URL, team_name='API Owners')
+    approvers=API_OWNERS_URL, team_name='API Owners',
+    slo_initial_response=LONGER_SLO_LIMIT)
 
 ShipApproval = ApprovalFieldDef(
     'Intent to Ship',
     'Three API Owners must approve your intent',
     core_enums.GATE_API_SHIP, THREE_LGTM,
-    approvers=API_OWNERS_URL, team_name='API Owners')
+    approvers=API_OWNERS_URL, team_name='API Owners',
+    slo_initial_response=LONGER_SLO_LIMIT)
 
 PrivacyOriginTrialApproval = ApprovalFieldDef(
     'Privacy OT Review',
@@ -152,7 +164,7 @@ APPROVAL_FIELDS_BY_ID = {
     }
 
 
-def fetch_owners(url):
+def fetch_owners(url) -> list[str]:
   """Load a list of email addresses from an OWNERS file."""
   raw_content = OwnersFile.get_raw_owner_file(url)
   if raw_content:
@@ -168,11 +180,10 @@ def fetch_owners(url):
   return decode_raw_owner_content(response.content)
 
 
-def decode_raw_owner_content(raw_content):
+def decode_raw_owner_content(raw_content) -> list[str]:
   owners = []
   decoded = base64.b64decode(raw_content).decode()
   for line in decoded.split('\n'):
-    logging.info('got line: '  + line[:settings.MAX_LOG_LINE])
     if '#' in line:
       line = line[:line.index('#')]
     line = line.strip()
@@ -182,8 +193,11 @@ def decode_raw_owner_content(raw_content):
   return owners
 
 
-def get_approvers(field_id):
+def get_approvers(field_id) -> list[str]:
   """Return a list of email addresses of users allowed to approve."""
+  if field_id not in APPROVAL_FIELDS_BY_ID:
+    return []
+
   afd = APPROVAL_FIELDS_BY_ID[field_id]
 
   # afd.approvers can be either a hard-coded list of approver emails
@@ -277,8 +291,12 @@ def set_vote(feature_id: int,  gate_type: int | None, new_state: int,
         gate_type=gate_type, state=new_state, set_on=now, set_by=set_by_email)
     new_vote.put()
 
-  if gate and update_gate_approval_state(gate):
-    gate.put()
+  if gate:
+    votes = Vote.get_votes(gate_id=gate.key.integer_id())
+    state_was_updated = update_gate_approval_state(gate, votes)
+    slo_was_updated = slo.record_vote(gate, votes)
+    if state_was_updated or slo_was_updated:
+      gate.put()
 
 
 def get_gate_by_type(feature_id: int, gate_type: int):
@@ -321,9 +339,8 @@ def _calc_gate_state(votes: list[Vote], rule: str) -> int:
   return Gate.PREPARING
 
 
-def update_gate_approval_state(gate: Gate) -> int:
+def update_gate_approval_state(gate: Gate, votes: list[Vote]) -> bool:
   """Change the Gate state in RAM based on its votes. Return True if changed."""
-  votes = Vote.get_votes(gate_id=gate.key.integer_id())
   afd = APPROVAL_FIELDS_BY_ID.get(gate.gate_type)
   # Assume any gate of a type that is not currently supported is ONE_LGTM.
   rule = afd.rule if afd else ONE_LGTM
@@ -333,4 +350,9 @@ def update_gate_approval_state(gate: Gate) -> int:
   gate.state = new_state
   if votes:
     gate.requested_on = min(v.set_on for v in votes)
+
+  # Starting a review resets responded_on.
+  if new_state == Vote.REVIEW_REQUESTED:
+    gate.responded_on = None
+
   return True

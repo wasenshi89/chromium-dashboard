@@ -23,6 +23,7 @@ from typing import TypedDict
 # JSON representation of Stage entity data.
 class StageDict(TypedDict):
   id: int
+  created: str
   feature_id: int
   stage_type: int
   display_name: str
@@ -186,6 +187,7 @@ class VerboseFeatureDict(TypedDict):
   active_stage_id: int | None
   bug_url: str | None
   launch_bug_url: str | None
+  screenshot_links: list[str]
   breaking_change: bool
 
   # Implementation in Chrome

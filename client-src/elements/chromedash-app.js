@@ -2,7 +2,7 @@ import {LitElement, css, html, nothing} from 'lit';
 import {ref, createRef} from 'lit/directives/ref.js';
 import {showToastMessage, parseRawQuery, updateURLParams} from './utils';
 import page from 'page';
-import {SHARED_STYLES} from '../sass/shared-css.js';
+import {SHARED_STYLES} from '../css/shared-css.js';
 
 class ChromedashApp extends LitElement {
   gateColumnRef = createRef();
@@ -119,12 +119,6 @@ class ChromedashApp extends LitElement {
     this.contextLink = '/features';
     this.sidebarHidden = true;
     this.selectedGateId = 0;
-
-    // Whether any changes have been made to form fields on the current page.
-    // This is false when first "loading" a new page.
-    // Undo of changes does not undo this setting.
-    this.changesMade = false;
-    //
     this.beforeUnloadHandler = null;
   }
 
@@ -152,7 +146,7 @@ class ChromedashApp extends LitElement {
     // Set up beforeunload event handler for the whole window.
     this.removeBeforeUnloadHandler();
     this.beforeUnloadHandler = (event) => {
-      if (!this.changesMade) return;
+      if (!this.getUnsavedChanges()) return;
       // Cancel the event, which asks user whether to stay.
       event.preventDefault();
       // Chrome requires returnValue to be set.
@@ -162,30 +156,44 @@ class ChromedashApp extends LitElement {
     window.addEventListener('beforeunload', this.beforeUnloadHandler);
   }
 
-  setChangesMade(flag) {
-    this.changesMade = flag;
+  getUnsavedChanges() {
+    if (!this.pageComponent) return;
+    return this.pageComponent.unsavedChanges;
+  }
+
+  setUnsavedChanges(flag) {
+    // Whether any unsaved changes have been made to form fields on the
+    // current pageComponent. This is false when first "loading" a new page.
+    // Undo of changes does not undo this setting.
+    if (!this.pageComponent) return;
+    this.pageComponent.unsavedChanges = flag;
   }
 
   handleFormSubmit() {
-    const currentChangesMade = this.changesMade;
-    this.setChangesMade(false);
+    // Remember the unsavedChanges status of the current page,
+    // then set it to false.
+    const currentPageComponent = this.pageComponent;
+    const currentUnsavedChanges = this.pageComponent.unsavedChanges;
+    this.setUnsavedChanges(false);
     this.removeBeforeUnloadHandler();
 
-    const currentPageComponent = this.pageComponent;
 
     // We can't easily check whether the form is valid, and that
     // is not enough anyway.  Since there is no event to indicate failure,
-    // just restore the changesMade status after a timeout,
-    // checking that we are still on the same page.
+    // we'll just restore the unsavedChanges status after a timeout,
+    // when we are still on the same page.
     window.setTimeout(() => {
-      if (this.pageComponent == currentPageComponent) {
-        this.setChangesMade(currentChangesMade);
+      if (this.pageComponent == currentPageComponent &&
+        this.getUnsavedChanges()) {
+        this.setUnsavedChanges(currentUnsavedChanges);
         this.addBeforeUnloadHandler();
       }
     }, 1000);
   }
 
   // Maybe set up new page, or if the URL is the same, we stay.
+  // If signin is required 'chromedash-login-required-page' is rendered.,
+  // we render that component instead page.
   // Returns true if we are proceeding to the new page, false otherwise.
   setupNewPage(ctx, componentName) {
     // If current page is ctx.path and a ctx.hash exists,
@@ -203,7 +211,7 @@ class ChromedashApp extends LitElement {
     // This is like the beforeunload handler, but for "in-page" actions.
     if (this.pageComponent) {
       // Act like we are unloading previous page and loading a new page.
-      if (this.changesMade) {
+      if (this.getUnsavedChanges()) {
         // Should we use shoelace dialog instead?
         if (!confirm('You will lose unsaved changes.  Proceed anyway?')) {
           // Set ctx.handled to false, so we don't change browser's history.
@@ -212,10 +220,13 @@ class ChromedashApp extends LitElement {
         }
       }
     }
+    const signinRequired = ctx.querystring.search('loginStatus=False') > -1;
 
     // Loading new page.
-    this.pageComponent = document.createElement(componentName);
-    this.setChangesMade(false);
+    this.pageComponent = document.createElement(signinRequired ?
+      'chromedash-login-required-page' :
+      componentName);
+    this.setUnsavedChanges(false);
     this.removeBeforeUnloadHandler();
 
     window.setTimeout(() => {
@@ -227,7 +238,7 @@ class ChromedashApp extends LitElement {
 
         // Remember if anything has changed since the page was loaded.
         this.pageComponent.addEventListener('sl-change', () => {
-          this.setChangesMade(true);
+          this.setUnsavedChanges(true);
         });
 
         form.addEventListener('submit', () => {
@@ -295,13 +306,20 @@ class ChromedashApp extends LitElement {
     });
     page('/guide/new', (ctx) => {
       if (!this.setupNewPage(ctx, 'chromedash-guide-new-page')) return;
-      this.pageComponent.userEmail = this.user.email;
+      if (ctx.querystring.search('loginStatus=False') == -1) {
+        this.pageComponent.userEmail = this.user.email;
+      }
       this.currentPage = ctx.path;
       this.hideSidebar();
     });
     page('/guide/enterprise/new', (ctx) => {
-      if (!this.setupNewPage(ctx, 'chromedash-guide-new-page')) return;
-      this.pageComponent.userEmail = this.user.email;
+      if (!this.setupNewPage(
+        ctx,
+        'chromedash-guide-new-page')) return;
+
+      if (ctx.querystring.search('loginStatus=False') == -1) {
+        this.pageComponent.userEmail = this.user.email;
+      }
       this.pageComponent.isEnterpriseFeature = true;
       this.currentPage = ctx.path;
       this.hideSidebar();
@@ -395,7 +413,9 @@ class ChromedashApp extends LitElement {
       this.hideSidebar();
     });
     page('/enterprise/releasenotes', (ctx) => {
-      if (!this.setupNewPage(ctx, 'chromedash-enterprise-release-notes-page')) return;
+      if (!this.setupNewPage(
+        ctx,
+        'chromedash-enterprise-release-notes-page')) return;
       this.pageComponent.user = this.user;
       this.contextLink = ctx.path;
       this.currentPage = ctx.path;

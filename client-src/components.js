@@ -24,6 +24,8 @@ import '@shoelace-style/shoelace/dist/components/relative-time/relative-time.js'
 import '@shoelace-style/shoelace/dist/components/skeleton/skeleton.js';
 import '@shoelace-style/shoelace/dist/components/select/select.js';
 import '@shoelace-style/shoelace/dist/components/textarea/textarea.js';
+import '@shoelace-style/shoelace/dist/components/badge/badge.js';
+import '@shoelace-style/shoelace/dist/components/tooltip/tooltip.js';
 import {setBasePath} from '@shoelace-style/shoelace/dist/utilities/base-path.js';
 
 // Set the base path to the folder you copied Shoelace's assets to
@@ -47,7 +49,6 @@ import './elements/chromedash-all-features-page';
 import './elements/chromedash-activity-page';
 import './elements/chromedash-activity-log';
 import './elements/chromedash-app';
-import './elements/chromedash-approvals-dialog';
 import './elements/chromedash-banner';
 import './elements/chromedash-callout';
 import './elements/chromedash-color-status';
@@ -73,6 +74,7 @@ import './elements/chromedash-guide-metadata-page';
 import './elements/chromedash-guide-verify-accuracy-page';
 import './elements/chromedash-header';
 import './elements/chromedash-legend';
+import './elements/chromedash-login-required-page';
 import './elements/chromedash-metadata';
 import './elements/chromedash-myfeatures-page';
 import './elements/chromedash-preflight-dialog';

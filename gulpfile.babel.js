@@ -67,6 +67,7 @@ gulp.task('lint-fix', () => {
 });
 
 // Compile and automatically prefix stylesheets
+// This task is deprecated. Use css directly.
 gulp.task('styles', () => {
   const AUTOPREFIXER_BROWSERS = [
     'last 1 version',
@@ -78,7 +79,6 @@ gulp.task('styles', () => {
     'client-src/sass/**/*.scss'
   ])
     .pipe(sass({
-      outputStyle: 'compressed',
       precision: 10
     }).on('error', sass.logError))
     .pipe(autoPrefixer(AUTOPREFIXER_BROWSERS))
@@ -157,7 +157,8 @@ gulp.task('js', () => {
 // Clean generated files
 gulp.task('clean', () => {
   return deleteAsync([
-    'static/css/',
+    // Disabled as part of removing sass/scss.
+    // 'static/css/',
     'static/dist',
     'static/js/',
   ], {dot: true});
@@ -167,7 +168,8 @@ gulp.task('clean', () => {
 // Build production files, the default task
 gulp.task('default', gulp.series(
   'clean',
-  'styles',
+  // Incrementally removing sass/scss.
+  // 'styles',
   'css',
   'js',
   'lint-fix',
@@ -183,11 +185,13 @@ gulp.task('watch', gulp.series(
     gulp.watch([
       'client-src/js-src/**/*.js',
       'client-src/elements/*.js',
+      'client-src/elements/css/**/*.js',
       'client-src/contexts/*.js',
     ], gulp.series(['lint', 'js']));
     gulp.watch([
       'client-src/components.js',
       'client-src/elements/*.js',
+      'client-src/elements/css/**/*.js',
       'client-src/contexts/*.js',
     ], gulp.series(['rollup']));
   },

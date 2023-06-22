@@ -17,6 +17,7 @@ const LINE_SEPARATED_FIELDS = [
   'explainer_links',
   'doc_links',
   'sample_links',
+  'screenshot_links',
 ];
 
 /* Convert the format of feature object fetched from API into those for edit.
@@ -80,9 +81,6 @@ export function formatFeatureForEdit(feature) {
 
     // from feature.browsers.other
     other_views_notes: feature.browsers.other.view.notes,
-
-    rollout_platforms: Array.from(new Set((feature.rollout_platforms || [])
-      .map(x => parseInt(x).toString()))),
   };
 
   COMMA_SEPARATED_FIELDS.map((field) => {
@@ -124,6 +122,7 @@ export const ENTERPRISE_NEW_FEATURE_FORM_FIELDS = [
   'owner',
   'editors',
   'enterprise_feature_categories',
+  'screenshot_links',
 ];
 
 // The fields that are available to every feature.
@@ -175,6 +174,7 @@ export const FLAT_ENTERPRISE_METADATA_FIELDS = {
         'owner',
         'editors',
         'enterprise_feature_categories',
+        'screenshot_links',
       ],
     },
   ],
@@ -382,10 +382,10 @@ const FLAT_PREPARE_TO_SHIP_FIELDS = {
 
 // All fields relevant to the enterprise prepare to ship stage.
 export const FLAT_ENTERPRISE_PREPARE_TO_SHIP_FIELDS = {
-  name: 'Start feature rollout',
+  name: 'Rollout step',
   sections: [
     {
-      name: 'Start feature rollout',
+      name: 'Rollout step',
       fields: [
         'rollout_impact',
         'rollout_milestone',

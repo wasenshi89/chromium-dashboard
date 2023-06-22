@@ -87,6 +87,7 @@ class FeatureEntry(ndb.Model):  # Copy from Feature
   active_stage_id = ndb.IntegerProperty()
   bug_url = ndb.StringProperty()  # Tracking bug
   launch_bug_url = ndb.StringProperty()  # FLT or go/launch
+  screenshot_links = ndb.StringProperty(repeated=True)
   breaking_change = ndb.BooleanProperty(default=False)
 
   # Implementation in Chrome
@@ -286,3 +287,4 @@ class Stage(ndb.Model):
   enterprise_policies = ndb.StringProperty(repeated=True)
 
   archived = ndb.BooleanProperty(default=False)
+  created = ndb.DateTimeProperty(auto_now_add=True)

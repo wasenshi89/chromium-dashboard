@@ -99,7 +99,8 @@ PI_SEC_REVIEW = ProgressItem('Security review issues addressed')
 PI_PRI_REVIEW = ProgressItem('Privacy review issues addressed')
 # TODO(jrobbins): needs detector.
 PI_EXTERNAL_REVIEWS = ProgressItem('External reviews')
-PI_R4DT_EMAIL = ProgressItem('Ready for Trial email', 'announcement_url')
+PI_R4DT_EMAIL = ProgressItem(
+    'Ready for Developer Testing email', 'announcement_url')
 
 PI_TAG_REQUESTED = ProgressItem('TAG review requested', 'tag_review')
 PI_VENDOR_SIGNALS = ProgressItem('Vendor signals', 'safari_views')
@@ -166,7 +167,7 @@ PI_ENTERPRISE_POLICIES = ProgressItem('Enterprise policies', 'enterprise_policie
 # This is a stage that can be inserted in the stages of any non-enterprise
 # features that are marked as breaking changes.
 FEATURE_ROLLOUT_STAGE = ProcessStage(
-      'Start feature rollout',
+      'Rollout step',
       '',
       [PI_ROLLOUT_IMPACT,
        PI_ROLLOUT_MILESTONE,
@@ -223,7 +224,7 @@ BLINK_PROCESS_STAGES = [
        PI_EXTERNAL_REVIEWS,
        PI_R4DT_EMAIL,
       ],
-      [Action('Draft Ready for Trial email', INTENT_EMAIL_URL,
+      [Action('Draft Ready for Developer Testing email', INTENT_EMAIL_URL,
               [PI_INITIAL_PUBLIC_PROPOSAL.name, PI_MOTIVATION.name,
                PI_EXPLAINER.name, PI_SPEC_LINK.name])],
       [],
@@ -330,7 +331,7 @@ BLINK_FAST_TRACK_STAGES = [
        PI_VENDOR_SIGNALS,
        PI_EST_TARGET_MILESTONE,
       ],
-      [Action('Draft Ready for Trial email', INTENT_EMAIL_URL,
+      [Action('Draft Ready for Developer Testing email', INTENT_EMAIL_URL,
               [PI_SPEC_LINK.name, PI_EST_TARGET_MILESTONE.name])],
       [],
       core_enums.INTENT_IMPLEMENT, core_enums.INTENT_EXPERIMENT,
@@ -409,7 +410,7 @@ PSA_ONLY_STAGES = [
        PI_VENDOR_SIGNALS,
        PI_EST_TARGET_MILESTONE,
       ],
-      [Action('Draft Ready for Trial email', INTENT_EMAIL_URL,
+      [Action('Draft Ready for Developer Testing email', INTENT_EMAIL_URL,
               [PI_SPEC_LINK.name, PI_EST_TARGET_MILESTONE.name])],
       [],
       core_enums.INTENT_IMPLEMENT, core_enums.INTENT_EXPERIMENT,
@@ -473,7 +474,7 @@ DEPRECATION_STAGES = [
        PI_VENDOR_SIGNALS,
        PI_EST_TARGET_MILESTONE,
       ],
-      [Action('Draft Ready for Trial email', INTENT_EMAIL_URL,
+      [Action('Draft Ready for Developer Testing email', INTENT_EMAIL_URL,
               [PI_MOTIVATION.name, PI_VENDOR_SIGNALS.name,
                PI_EST_TARGET_MILESTONE.name])],
       [],
@@ -531,7 +532,7 @@ DEPRECATION_STAGES = [
 # Thise are the stages for a feature that has the enterprise feature type.
 ENTERPRISE_STAGES = [
   ProcessStage(
-      'Start feature rollout',
+      'Rollout step',
       '',
       [PI_ROLLOUT_IMPACT,
        PI_ROLLOUT_MILESTONE,
@@ -623,7 +624,7 @@ PROGRESS_DETECTORS = {
     lambda f, stages: (core_enums.STAGE_TYPES_SHIPPING[f.feature_type] and
         stages[core_enums.STAGE_TYPES_SHIPPING[f.feature_type]][0].intent_thread_url),
 
-    'Ready for Trial email':
+    'Ready for Developer Testing email':
     lambda f, stages: (core_enums.STAGE_TYPES_DEV_TRIAL[f.feature_type] and
         stages[core_enums.STAGE_TYPES_DEV_TRIAL[f.feature_type]][0].announcement_url),
 

@@ -1,12 +1,12 @@
 import {LitElement, css, html, nothing} from 'lit';
 import './chromedash-feature-detail';
 import './chromedash-gantt';
-import {openApprovalsDialog} from './chromedash-approvals-dialog';
 import {autolink, renderHTMLIf, showToastMessage,
   renderAbsoluteDate, renderRelativeDate,
 } from './utils.js';
-import {SHARED_STYLES} from '../sass/shared-css.js';
+import {SHARED_STYLES} from '../css/shared-css.js';
 import {DETAILS_STYLES} from './chromedash-feature-detail';
+import {enhanceUrl} from './feature-link';
 
 const INACTIVE_STATES = [
   'No longer pursuing',
@@ -95,6 +95,7 @@ export class ChromedashFeaturePage extends LitElement {
       user: {type: Object},
       featureId: {type: Number},
       feature: {type: Object},
+      featureLinks: {type: Array},
       gates: {type: Array},
       comments: {type: Array},
       process: {type: Object},
@@ -113,6 +114,7 @@ export class ChromedashFeaturePage extends LitElement {
     this.user = {};
     this.featureId = 0;
     this.feature = {};
+    this.featureLinks = [];
     this.gates = [];
     this.comments = {};
     this.process = {};
@@ -143,13 +145,19 @@ export class ChromedashFeaturePage extends LitElement {
       window.csClient.getFeatureProcess(this.featureId),
       window.csClient.getDismissedCues(),
       window.csClient.getStars(),
-    ]).then(([feature, gatesRes, commentRes, process, dismissedCues, starredFeatures]) => {
+    ]).then(([
+      feature,
+      gatesRes,
+      commentRes,
+      process,
+      dismissedCues,
+      starredFeatures,
+    ]) => {
       this.feature = feature;
       this.gates = gatesRes.gates;
       this.comments = commentRes.comments;
       this.process = process;
       this.dismissedCues = dismissedCues;
-
       if (starredFeatures.includes(this.featureId)) {
         this.starred = true;
       }
@@ -164,6 +172,12 @@ export class ChromedashFeaturePage extends LitElement {
         showToastMessage('Some errors occurred. Please refresh the page or try again later.');
       }
     });
+
+    window.csClient.getFeatureLinks(this.featureId).then(
+      (featureLinks) => {
+        this.featureLinks = featureLinks;
+      },
+    );
   }
 
   refetch() {
@@ -223,15 +237,6 @@ export class ChromedashFeaturePage extends LitElement {
     navigator.clipboard.writeText(url).then(() => {
       showToastMessage('Link copied');
     });
-  }
-
-  /* Open the specific approvals dialog when the user clicks on a gate chip. */
-  // TODO(jrobbins): Make it specific.
-  handleOpenApprovals(e) {
-    e.preventDefault();
-    // open old approvals dialog.
-    // TODO(jrobbins): Phase this out after approvals column is done.
-    openApprovalsDialog(this.user, e.detail.feature);
   }
 
   renderSkeletonSection() {
@@ -319,11 +324,31 @@ export class ChromedashFeaturePage extends LitElement {
     `;
   }
 
+  renderWarnings() {
+    if (this.feature.deleted) {
+      return html`
+        <div id="deleted" class="warning">
+          This feature is marked as deleted.  It does not appear in
+          feature lists and is only viewable by users who can edit it.
+        </div>
+      `;
+    }
+    if (this.feature.unlisted) {
+      return html`
+        <div id="access" class="warning">
+          This feature is only shown in the feature list
+          to users with access to edit this feature.
+        </div>
+      `;
+    }
+    return nothing;
+  }
+
   renderEnterpriseFeatureContent() {
     return html`
       ${this.feature.summary ? html`
         <section id="summary">
-          <p class="preformatted">${autolink(this.feature.summary)}</p>
+          <p class="preformatted">${autolink(this.feature.summary, this.featureLinks)}</p>
         </section>
       `: nothing}
     `;
@@ -331,23 +356,16 @@ export class ChromedashFeaturePage extends LitElement {
 
   renderFeatureContent() {
     return html`
-      ${this.feature.unlisted ? html`
-        <section id="access">
-        <p><b>This feature is only shown in the feature list
-        to users with access to edit this feature.</b></p>
-        </section>
-      `: nothing}
-
       ${this.feature.summary ? html`
         <section id="summary">
-          <p class="preformatted">${autolink(this.feature.summary)}</p>
+          <p class="preformatted">${autolink(this.feature.summary, this.featureLinks)}</p>
         </section>
       `: nothing}
 
       ${this.feature.motivation ? html`
         <section id="motivation">
           <h3>Motivation</h3>
-          <p class="preformatted">${autolink(this.feature.motivation)}</p>
+          <p class="preformatted">${autolink(this.feature.motivation, this.featureLinks)}</p>
         </section>
       `: nothing}
 
@@ -404,7 +422,6 @@ export class ChromedashFeaturePage extends LitElement {
     `;
   }
 
-
   renderFeatureStatus() {
     return html`
       <section id="status">
@@ -422,9 +439,12 @@ export class ChromedashFeaturePage extends LitElement {
         <p>
           <label>Implementation status:</label>
           <b>${this.feature.browsers.chrome.status.text}</b>
-          ${this.feature.browsers.chrome.bug ? html`
+          ${this.feature.browsers.chrome.bug ? enhanceUrl(
+      this.feature.browsers.chrome.bug,
+      this.featureLinks,
+      html`
             (<a href=${this.feature.browsers.chrome.bug} target="_blank" rel="noopener">tracking bug</a>)
-          `: nothing}
+          `, 'tracking bug') : nothing}
           <chromedash-gantt .feature=${this.feature}></chromedash-gantt>
         </p>
       </section>
@@ -479,7 +499,7 @@ export class ChromedashFeaturePage extends LitElement {
       ${this.feature.comments ? html`
         <section id="comments">
           <h3>Comments</h3>
-          <p class="preformatted">${autolink(this.feature.comments)}</p>
+          <p class="preformatted">${autolink(this.feature.comments, this.featureLinks)}</p>
         </section>
       `: nothing}
 
@@ -525,7 +545,7 @@ export class ChromedashFeaturePage extends LitElement {
         .process=${this.process}
         .dismissedCues=${this.dismissedCues}
         .rawQuery=${this.rawQuery}
-        @open-approvals-event=${this.handleOpenApprovals}
+        .featureLinks=${this.featureLinks}
         selectedGateId=${this.selectedGateId}
        >
       </chromedash-feature-detail>
@@ -546,6 +566,7 @@ export class ChromedashFeaturePage extends LitElement {
     // At this point, the feature has loaded successfully, render the components.
     return html`
       ${this.renderSubHeader()}
+      ${this.renderWarnings()}
       <sl-details summary="Overview"
         ?open=${true}
       >
